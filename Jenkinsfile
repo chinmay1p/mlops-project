@@ -12,6 +12,12 @@ pipeline {
     }
 
     stages {
+        stage('Checkout Code') {
+            steps {
+                git branch: 'main', url: 'https://github.com/chinmay1p/mlops-project.git'
+            }
+        }
+
         stage('Show Workspace') {
             steps {
                 bat 'echo Workspace: %cd%'
