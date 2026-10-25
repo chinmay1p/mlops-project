@@ -45,5 +45,48 @@ services:
     depends_on:
       - backend
 
+  prometheus:
+    image: prom/prometheus:v2.52.0
+    ports: ["9090:9090"]
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
+      - prometheus_data:/prometheus
+    depends_on:
+      - backend
+      - ai-service
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    ports: ["9093:9093"]
+    environment:
+      - SLACK_PART_A=https://hooks.slack.com/services/T0CBU31P7HB/B0CCTQGHVB2
+      - SLACK_PART_B=7dsWWeriX8haaSCirZjmkhxw
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        cp /etc/alertmanager/alertmanager.yml /tmp/alertmanager.yml
+        sed -i "s|__SLACK_WEBHOOK_URL__|$$SLACK_PART_A/$$SLACK_PART_B|g" /tmp/alertmanager.yml
+        exec /bin/alertmanager --config.file=/tmp/alertmanager.yml --storage.path=/alertmanager
+    volumes:
+      - ./monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+
+  grafana:
+    image: grafana/grafana:10.4.2
+    ports: ["3000:3000"]
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/etc/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+
 volumes:
   mongo_data:
+  prometheus_data:
+  grafana_data:

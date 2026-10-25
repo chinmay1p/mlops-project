@@ -17,11 +17,13 @@ import sys
 import logging
 import asyncio
 import joblib
+import time
 import sklearn
 import pandas as pd
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
+from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
 
 from app.config import settings
 from app.schemas import TransactionIn, TransferIn, AnalyzeResponse
@@ -29,6 +31,30 @@ from app.features.feature_engineering import build_features, transform_merchant_
 from app.graph.graph_store import graph_store, scheduled_rebuild_loop
 from app.graph.graph_detection import detect_smurfing
 from app.explainability.shap_explainer import explain_prediction
+
+# ── Prometheus Metrics ──────────────────────────────────────
+INFERENCE_DURATION = Histogram(
+    "finguard_model_inference_duration_seconds",
+    "Time taken to run model inference in seconds",
+    buckets=[0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0]
+)
+FRAUD_SCORE_DISTRIBUTION = Histogram(
+    "finguard_fraud_score",
+    "Distribution of predicted fraud confidence scores",
+    buckets=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+)
+SCORED_TXN_TOTAL = Counter(
+    "finguard_scored_transactions_total",
+    "Total transactions scored by AI service",
+    ["verdict", "risk_level"]
+)
+SMURFING_DETECTED_TOTAL = Counter(
+    "finguard_smurfing_patterns_total",
+    "Total smurfing/money laundering patterns identified",
+    ["pattern"]
+)
+GRAPH_NODES_GAUGE = Gauge("finguard_graph_nodes_total", "Active transaction graph nodes")
+GRAPH_EDGES_GAUGE = Gauge("finguard_graph_edges_total", "Active transaction graph edges")
 
 # ── Logging ─────────────────────────────────────────────────
 logging.basicConfig(
@@ -151,12 +177,21 @@ def health():
     }
 
 
+@app.get("/metrics")
+def metrics():
+    """Expose Prometheus metrics for scraping."""
+    GRAPH_NODES_GAUGE.set(graph_store.graph.number_of_nodes())
+    GRAPH_EDGES_GAUGE.set(graph_store.graph.number_of_edges())
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
+
 @app.post("/analyze_transaction", response_model=AnalyzeResponse)
 def analyze_transaction(txn: TransactionIn):
     """
     Score a single transaction for fraud probability (Gate 1)
     and check the account-level transaction graph for smurfing (Gate 2).
     """
+    t_start = time.time()
     proba = 0.0
     flags = []
 
@@ -188,6 +223,10 @@ def analyze_transaction(txn: TransactionIn):
             logger.error(f"Model prediction failed: {e}")
             # Fall through to rule-based scoring
 
+    # Observe inference duration and fraud probability distribution
+    INFERENCE_DURATION.observe(time.time() - t_start)
+    FRAUD_SCORE_DISTRIBUTION.observe(proba)
+
     # Rule-based flag augmentation
     try:
         df_rules = pd.DataFrame([txn.model_dump()])
@@ -207,9 +246,17 @@ def analyze_transaction(txn: TransactionIn):
     # Smurfing check — reads the graph using cardNum as node key
     smurfing_result = detect_smurfing(graph_store.graph, txn.cardNum)
 
+    verdict = "Fraud" if proba > 0.5 else "Legit"
+    risk_level = "CRITICAL" if proba > 0.85 else ("HIGH" if proba > 0.7 else ("MEDIUM" if proba > 0.3 else "LOW"))
+    SCORED_TXN_TOTAL.labels(verdict=verdict, risk_level=risk_level).inc()
+
+    if smurfing_result.get("is_smurfing"):
+        pattern_name = smurfing_result.get("pattern") or "detected_loop"
+        SMURFING_DETECTED_TOTAL.labels(pattern=pattern_name).inc()
+
     return AnalyzeResponse(
         fraud_detection={
-            "result": "Fraud" if proba > 0.5 else "Legit",
+            "result": verdict,
             "confidence": round(proba, 4),
             "flags": flags,
         },

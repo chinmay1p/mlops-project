@@ -3,6 +3,7 @@ const axios = require('axios');
 const { body, query, validationResult } = require('express-validator');
 const Transaction = require('../models/Transaction');
 const { requireAuth, requireRole } = require('../middleware/auth');
+const { transactionsProcessed, transactionAmount } = require('../metrics');
 
 const router = express.Router();
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
@@ -82,6 +83,19 @@ router.post(
         isSmurfing: aiResult?.smurfing_detection?.is_smurfing ?? false,
         smurfingPattern: aiResult?.smurfing_detection?.pattern ?? null,
       });
+
+      // Record Prometheus metrics
+      try {
+        transactionsProcessed.inc({
+          status: saved.status || 'APPROVED',
+          is_smurfing: saved.isSmurfing ? 'true' : 'false',
+        });
+        if (saved.amount) {
+          transactionAmount.observe(Number(saved.amount));
+        }
+      } catch (metricErr) {
+        console.warn('Failed to record transaction metric:', metricErr.message);
+      }
 
       res.status(201).json({
         transaction: saved,

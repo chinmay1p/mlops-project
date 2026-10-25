@@ -1,0 +1,38 @@
+groups:
+  - name: finguard_alerts
+    rules:
+      - alert: HighFraudAttackSpike
+        expr: rate(finguard_scored_transactions_total{verdict="Fraud"}[1m]) > 0
+        for: 10s
+        labels:
+          severity: critical
+        annotations:
+          summary: "🚨 High Fraud Activity Detected"
+          description: "Fraudulent transactions detected at rate {{ $value | humanize }} tx/sec. Check dashboard immediately."
+
+      - alert: SmurfingMoneyLaunderingRing
+        expr: increase(finguard_smurfing_patterns_total[1m]) > 0
+        for: 5s
+        labels:
+          severity: critical
+        annotations:
+          summary: "🕸️ Money Laundering Smurfing Pattern Detected"
+          description: "Graph anomaly detected (circular layering or fan-in ring) in account transfers."
+
+      - alert: AIServiceHighLatency
+        expr: histogram_quantile(0.95, sum(rate(finguard_model_inference_duration_seconds_bucket[1m])) by (le)) > 0.4
+        for: 30s
+        labels:
+          severity: warning
+        annotations:
+          summary: "⚠️ AI Inference Latency High"
+          description: "p95 AI scoring latency is above 400ms (current: {{ $value | humanizeDuration }})."
+
+      - alert: BackendOrAIServiceDown
+        expr: up == 0
+        for: 20s
+        labels:
+          severity: critical
+        annotations:
+          summary: "❌ Service Instance Down"
+          description: "Job {{ $labels.job }} instance {{ $labels.instance }} has been unreachable for > 20s."
