@@ -4,6 +4,7 @@ import { transactionsAPI } from '../api/client';
 import StatsCard from '../components/StatsCard';
 import TransactionTable from '../components/TransactionTable';
 import DetailPanel from '../components/DetailPanel';
+import LiveDemoPanel from '../components/LiveDemoPanel';
 import { motion, AnimatePresence } from 'framer-motion';
 import gsap from 'gsap';
 import {
@@ -172,6 +173,9 @@ export default function DashboardPage() {
             />
           </div>
         </div>
+
+        {/* ── Interactive Demo & Simulator Control Panel ── */}
+        <LiveDemoPanel onDataUpdated={loadStats} />
 
         {/* ── Stats Cards ── */}
         <div style={{

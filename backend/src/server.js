@@ -9,6 +9,7 @@ const authRoutes = require('./routes/auth');
 const transactionRoutes = require('./routes/transactions');
 const caseRoutes = require('./routes/cases');
 const kycRoutes = require('./routes/kyc');
+const demoRoutes = require('./routes/demo');
 
 const { register, httpRequestCounter, httpRequestDuration } = require('./metrics');
 
@@ -48,6 +49,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/cases', caseRoutes);
 app.use('/api/kyc', kycRoutes);
+app.use('/api/demo', demoRoutes);
 
 // Health check
 app.get('/health', (_req, res) => {
