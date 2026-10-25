@@ -11,9 +11,9 @@ env/
 *.env
 .env.*
 *.env.local
-backend/.env
-ai-service/.env
 frontend/.env
+!backend/.env
+!ai-service/.env
 !*.env.example
 
 # ── Build artifacts ──────────────────────
