@@ -60,8 +60,8 @@ services:
     image: prom/alertmanager:v0.27.0
     ports: ["9093:9093"]
     environment:
-      - SLACK_PART_A=https://hooks.slack.com/services/T0CBU31P7HB/B0CCTQGHVB2
-      - SLACK_PART_B=7dsWWeriX8haaSCirZjmkhxw
+      - SLACK_PART_A=https://hooks.slack.com/services/T0CBU31P7HB/B0CBJC02REK
+      - SLACK_PART_B=PTnVDkFBZPh5DsP2yupWtgKK
     entrypoint:
       - /bin/sh
       - -c
