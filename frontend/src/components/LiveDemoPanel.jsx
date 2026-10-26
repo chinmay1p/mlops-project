@@ -79,7 +79,7 @@ export default function LiveDemoPanel({ onDataUpdated }) {
         {/* Quick Monitoring Links */}
         <div className="flex items-center gap-2">
           <a
-            href="http://localhost:3000"
+            href="http://localhost:3000/d/finguard-mlops-overview/finguard-threat-and-mlops-monitor"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 rounded-lg border border-orange-500/30 bg-orange-500/10 px-3 py-1.5 text-xs font-medium text-orange-300 hover:bg-orange-500/20 transition-all"
