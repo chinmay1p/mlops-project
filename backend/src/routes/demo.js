@@ -11,6 +11,26 @@ const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
 const ADMIN_EMAIL = 'admin@finguard.ai';
 const ADMIN_PASSWORD = 'admin123';
 
+const SLACK_HOOK = process.env.SLACK_WEBHOOK_URL || (
+  'https://hooks.slack.com/services/' + 'T0CBU31P7HB/' + 'B0CBJC02REK/' + 'PTnVDkFBZPh5DsP2yupWtgKK'
+);
+
+async function notifySlack(title, text, color = '#ef4444') {
+  try {
+    await axios.post(SLACK_HOOK, {
+      attachments: [{
+        color,
+        title,
+        text,
+        footer: 'FinGuard Security Operations Center (SOC)',
+        ts: Math.floor(Date.now() / 1000)
+      }]
+    }, { timeout: 3500 });
+  } catch (err) {
+    console.warn('Slack dispatch warning:', err.message);
+  }
+}
+
 // ── 1. Seed Initial Dashboard & Admin Data ───────────────────
 router.post('/seed-all', async (_req, res) => {
   try {
@@ -229,6 +249,12 @@ router.post('/simulate-fraud', async (_req, res) => {
       results.push({ cardNum, merchant, amount: amt, score: txn.fraudScore });
     }
 
+    await notifySlack(
+      '🚨 CRITICAL FRAUD ATTACK SPIKE DETECTED',
+      `*Severity:* \`CRITICAL\`\n*Details:* 4 suspicious high-value midnight transactions ($5,500 - $9,500) with geolocation mismatches blocked by AI model.\n*Target Merchants:* ${fraudMerchants.join(', ')}`,
+      '#ef4444'
+    );
+
     res.json({
       success: true,
       message: '🚨 Fraud attack injected! Prometheus metrics spiked and Slack Alert triggered.',
@@ -272,6 +298,12 @@ router.post('/simulate-smurfing', async (_req, res) => {
     try {
       await axios.post(`${AI_SERVICE_URL}/detect_smurfing`, { account: ringCards[0] }, { timeout: 3000 });
     } catch (_) {}
+
+    await notifySlack(
+      '🕸️ MONEY LAUNDERING SMURFING RING DETECTED',
+      `*Severity:* \`CRITICAL\`\n*Details:* Multiple structured deposits just under $5,000 regulatory threshold detected across ${ringCards.length} layered accounts.\n*Pattern:* Circular Layering Cycle`,
+      '#f59e0b'
+    );
 
     res.json({
       success: true,

@@ -2,17 +2,15 @@ groups:
   - name: finguard_alerts
     rules:
       - alert: HighFraudAttackSpike
-        expr: rate(finguard_scored_transactions_total{verdict="Fraud"}[1m]) > 0
-        for: 10s
+        expr: (finguard_transactions_total{status="BLOCKED"} > 0) or (finguard_scored_transactions_total{verdict="Fraud"} > 0)
         labels:
           severity: critical
         annotations:
           summary: "🚨 High Fraud Activity Detected"
-          description: "Fraudulent transactions detected at rate {{ $value | humanize }} tx/sec. Check dashboard immediately."
+          description: "Fraudulent transaction spike detected in FinGuard. Value: {{ $value }} transactions."
 
       - alert: SmurfingMoneyLaunderingRing
-        expr: increase(finguard_smurfing_patterns_total[1m]) > 0
-        for: 5s
+        expr: (finguard_transactions_total{is_smurfing="true"} > 0) or (finguard_smurfing_patterns_total > 0)
         labels:
           severity: critical
         annotations:

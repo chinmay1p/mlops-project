@@ -68,7 +68,7 @@ services:
       - |
         cp /etc/alertmanager/alertmanager.yml /tmp/alertmanager.yml
         sed -i "s|__SLACK_WEBHOOK_URL__|$$SLACK_PART_A/$$SLACK_PART_B|g" /tmp/alertmanager.yml
-        exec /bin/alertmanager --config.file=/tmp/alertmanager.yml --storage.path=/alertmanager
+        exec /bin/alertmanager --config.file=/tmp/alertmanager.yml --storage.path=/alertmanager --cluster.listen-address="" --log.level=debug
     volumes:
       - ./monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
 

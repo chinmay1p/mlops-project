@@ -20,6 +20,7 @@
         "defaults": {
           "color": { "mode": "thresholds" },
           "mappings": [],
+          "noValue": "0",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -42,7 +43,9 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum(finguard_transactions_total{status=\"BLOCKED\"}) or sum(finguard_scored_transactions_total{verdict=\"Fraud\"}) or vector(0)",
+          "expr": "sum(finguard_transactions_total{status=\"BLOCKED\"}) or sum(finguard_scored_transactions_total{verdict=\"Fraud\"})",
+          "instant": true,
+          "range": false,
           "legendFormat": "Fraudulent Transactions",
           "refId": "A"
         }
@@ -55,6 +58,7 @@
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
+          "noValue": "0",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -75,7 +79,9 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum(finguard_transactions_total{status=\"APPROVED\"}) or sum(finguard_scored_transactions_total{verdict=\"Legit\"}) or vector(0)",
+          "expr": "sum(finguard_transactions_total{status=\"APPROVED\"}) or sum(finguard_scored_transactions_total{verdict=\"Legit\"})",
+          "instant": true,
+          "range": false,
           "legendFormat": "Legit Transactions",
           "refId": "A"
         }
@@ -88,6 +94,7 @@
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
+          "noValue": "0",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -109,7 +116,9 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum(finguard_transactions_total{is_smurfing=\"true\"}) or sum(finguard_smurfing_patterns_total) or vector(0)",
+          "expr": "sum(finguard_transactions_total{is_smurfing=\"true\"}) or sum(finguard_smurfing_patterns_total)",
+          "instant": true,
+          "range": false,
           "legendFormat": "Smurfing Loops",
           "refId": "A"
         }
