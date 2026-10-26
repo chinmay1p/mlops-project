@@ -52,6 +52,7 @@ export const transactionsAPI = {
 // ── Cases API ──────────────────────────────────────────────
 export const casesAPI = {
   getPending: (params) => client.get('/cases/pending', { params }),
+  getResolved: (params) => client.get('/cases/resolved', { params }),
   label: (id, label) => client.patch(`/cases/${id}/label`, { label }),
   getStats: () => client.get('/cases/stats'),
 };

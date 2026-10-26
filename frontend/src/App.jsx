@@ -8,6 +8,8 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import TransactionsPage from './pages/TransactionsPage';
 import CasesPage from './pages/CasesPage';
+import CasesCorrectedPage from './pages/CasesCorrectedPage';
+import ReportsPage from './pages/ReportsPage';
 import FraudGraphPage from './pages/FraudGraphPage';
 import KycPage from './pages/KycPage';
 import AdminPage from './pages/AdminPage';
@@ -105,6 +107,26 @@ function AnimatedRoutes() {
                 <PageTransition><CasesPage /></PageTransition>
               </AppLayout>
             </RoleRoute>
+          }
+        />
+        <Route
+          path="/cases-corrected"
+          element={
+            <RoleRoute roles={['admin']}>
+              <AppLayout>
+                <PageTransition><CasesCorrectedPage /></PageTransition>
+              </AppLayout>
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="/reports"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <PageTransition><ReportsPage /></PageTransition>
+              </AppLayout>
+            </ProtectedRoute>
           }
         />
         <Route

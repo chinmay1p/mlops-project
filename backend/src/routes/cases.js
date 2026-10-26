@@ -67,6 +67,31 @@ router.get('/pending', requireAuth, requireRole('admin'), async (req, res, next)
   }
 });
 
+// ── GET /api/cases/resolved — Get corrected / reviewed anomalies ──
+router.get('/resolved', requireAuth, requireRole('admin'), async (req, res, next) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const skip = (page - 1) * limit;
+
+    const filter = {
+      analystLabel: { $in: ['true_positive', 'false_positive'] }
+    };
+
+    const [cases, total] = await Promise.all([
+      Transaction.find(filter).sort({ updatedAt: -1 }).skip(skip).limit(limit),
+      Transaction.countDocuments(filter),
+    ]);
+
+    res.json({
+      cases,
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ── GET /api/cases/stats — Case review statistics ──────────
 router.get('/stats', requireAuth, requireRole('admin'), async (req, res, next) => {
   try {
