@@ -2,269 +2,222 @@ import { useState } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Play,
+  Sparkles,
   ShieldCheck,
   AlertOctagon,
   Network,
+  RotateCcw,
   ExternalLink,
   ChevronDown,
   ChevronUp,
-  Database,
-  Sparkles,
+  Terminal,
+  Activity,
   CheckCircle2,
-  BellRing
+  XCircle
 } from 'lucide-react';
 
 export default function LiveDemoPanel({ onDataUpdated }) {
-  const [isOpen, setIsOpen] = useState(true);
   const [loadingAction, setLoadingAction] = useState(null);
+  const [showLogs, setShowLogs] = useState(false);
+  const [lastStatus, setLastStatus] = useState({ type: 'ready', msg: 'System Ready' });
   const [logs, setLogs] = useState([
-    {
-      time: new Date().toLocaleTimeString(),
-      type: 'info',
-      msg: 'Demo simulator initialized. Ready to trigger traffic & alerts.'
-    }
+    { time: new Date().toLocaleTimeString(), type: 'info', msg: 'Simulator ready' }
   ]);
 
   const addLog = (type, msg) => {
+    const time = new Date().toLocaleTimeString();
+    setLastStatus({ type, msg });
     setLogs((prev) => [
-      { time: new Date().toLocaleTimeString(), type, msg },
-      ...prev.slice(0, 19)
+      { time, type, msg },
+      ...prev.slice(0, 15)
     ]);
   };
 
   const handleAction = async (actionType, url, successMsg) => {
     setLoadingAction(actionType);
-    addLog('info', `Sending request: ${actionType}...`);
     try {
       const res = await axios.post(url);
-      addLog('success', successMsg || res.data?.message || 'Action executed successfully.');
+      addLog('success', successMsg || res.data?.message || 'Action executed successfully');
       if (onDataUpdated) {
         onDataUpdated();
       }
     } catch (err) {
-      addLog('error', `Failed: ${err.response?.data?.error || err.message}`);
+      addLog('error', err.response?.data?.error || err.message || 'Action failed');
     } finally {
       setLoadingAction(null);
     }
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="mb-8 rounded-2xl border border-indigo-500/30 bg-gradient-to-r from-slate-900/90 via-indigo-950/40 to-slate-900/90 backdrop-blur-xl shadow-2xl overflow-hidden"
-    >
-      {/* Header Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-4 border-b border-indigo-500/20 bg-indigo-500/5">
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
-            <Sparkles className="h-5 w-5 animate-pulse" />
+    <div className="mb-6 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] shadow-sm backdrop-blur-md overflow-hidden transition-all">
+      {/* ── Compact Main Toolbar (Single Clean Row) ── */}
+      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5">
+        
+        {/* Left: Badge & Live Status Ticker */}
+        <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-500 text-xs font-semibold">
+            <Sparkles size={12} className="animate-pulse" />
+            <span>Simulator</span>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-sm font-semibold tracking-wide text-white uppercase">
-                Interactive Presentation & Live Threat Simulator
-              </h2>
-              <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-400 border border-emerald-500/20">
-                Live Ready
-              </span>
-            </div>
-            <p className="text-xs text-slate-400">
-              Trigger real transactions, evaluate ML fraud scores, fire Slack alerts, and inspect Prometheus & Grafana.
-            </p>
+
+          {/* Inline Status Message */}
+          <div className="hidden sm:flex items-center gap-1.5 text-xs font-medium text-[var(--text-muted)] max-w-xs md:max-w-md truncate">
+            {lastStatus.type === 'success' && <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />}
+            {lastStatus.type === 'error' && <XCircle size={13} className="text-rose-500 shrink-0" />}
+            {lastStatus.type === 'ready' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />}
+            <span className="truncate text-[var(--text-secondary)]">{lastStatus.msg}</span>
           </div>
         </div>
 
-        {/* Quick Monitoring Links */}
-        <div className="flex items-center gap-2">
+        {/* Center: Action Buttons Group */}
+        <div className="flex items-center flex-wrap gap-1.5">
+          {/* 1. Normal Traffic */}
+          <button
+            disabled={loadingAction !== null}
+            onClick={() =>
+              handleAction(
+                'normal',
+                '/api/demo/simulate-normal',
+                'Injected 4 legitimate consumer transactions'
+              )
+            }
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border border-emerald-500/20 transition-all disabled:opacity-50"
+            title="Generate legitimate consumer transactions"
+          >
+            <ShieldCheck size={13} />
+            <span>+ Normal</span>
+            {loadingAction === 'normal' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />}
+          </button>
+
+          {/* 2. Fraud Attack */}
+          <button
+            disabled={loadingAction !== null}
+            onClick={() =>
+              handleAction(
+                'fraud',
+                '/api/demo/simulate-fraud',
+                '🚨 Fraud attack injected! Slack alert dispatched'
+              )
+            }
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 border border-rose-500/20 transition-all disabled:opacity-50 shadow-sm"
+            title="Inject fraudulent transactions (fires Slack alert)"
+          >
+            <AlertOctagon size={13} />
+            <span>Fraud Attack</span>
+            {loadingAction === 'fraud' && <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />}
+          </button>
+
+          {/* 3. Smurfing */}
+          <button
+            disabled={loadingAction !== null}
+            onClick={() =>
+              handleAction(
+                'smurfing',
+                '/api/demo/simulate-smurfing',
+                '🕸️ Smurfing ring injected! Laundering alert triggered'
+              )
+            }
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 border border-amber-500/20 transition-all disabled:opacity-50"
+            title="Simulate money laundering ring"
+          >
+            <Network size={13} />
+            <span>Smurfing Ring</span>
+            {loadingAction === 'smurfing' && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" />}
+          </button>
+
+          {/* 4. Seed History */}
+          <button
+            disabled={loadingAction !== null}
+            onClick={() =>
+              handleAction(
+                'seed',
+                '/api/demo/seed-all',
+                'Database seeded with fresh history'
+              )
+            }
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:bg-[var(--border-color)] border border-[var(--border-color)] transition-all disabled:opacity-50"
+            title="Reset & seed transaction history"
+          >
+            <RotateCcw size={13} />
+            <span>Reset Seed</span>
+            {loadingAction === 'seed' && <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-ping" />}
+          </button>
+        </div>
+
+        {/* Right: Monitoring Shortcuts & Log Toggle */}
+        <div className="flex items-center gap-1.5">
           <a
             href="http://localhost:3000/d/finguard-mlops-overview/finguard-threat-and-mlops-monitor"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 rounded-lg border border-orange-500/30 bg-orange-500/10 px-3 py-1.5 text-xs font-medium text-orange-300 hover:bg-orange-500/20 transition-all"
-            title="Open Grafana Dashboard in new tab"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium text-orange-400 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/20 transition-all"
+            title="Open Grafana Dashboard"
           >
-            <span>Grafana Dashboard</span>
-            <ExternalLink className="h-3 w-3" />
+            <span>Grafana</span>
+            <ExternalLink size={10} />
           </a>
 
           <a
             href="http://localhost:9090/alerts"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-300 hover:bg-red-500/20 transition-all"
-            title="Open Prometheus Alerts in new tab"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium text-red-400 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 transition-all"
+            title="Open Prometheus Alerts"
           >
-            <span>Prometheus Alerts</span>
-            <ExternalLink className="h-3 w-3" />
+            <span>Alerts</span>
+            <ExternalLink size={10} />
           </a>
 
-          <a
-            href="http://localhost:9093"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-300 hover:bg-amber-500/20 transition-all"
-            title="Open Alertmanager in new tab"
-          >
-            <BellRing className="h-3 w-3" />
-            <span>Alertmanager</span>
-          </a>
-
+          {/* Terminal Log Toggle */}
           <button
-            onClick={() => setIsOpen(!isOpen)}
-            className="p-1.5 text-slate-400 hover:text-white transition-colors"
+            onClick={() => setShowLogs(!showLogs)}
+            className={`p-1.5 rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] border border-transparent transition-all ${
+              showLogs ? 'bg-[var(--bg-elevated)] border-[var(--border-color)] text-blue-500' : ''
+            }`}
+            title={showLogs ? 'Hide activity log' : 'Show activity log'}
           >
-            {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            <Terminal size={14} />
           </button>
         </div>
       </div>
 
+      {/* ── Optional Collapsible Activity Log ── */}
       <AnimatePresence>
-        {isOpen && (
+        {showLogs && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="p-6 space-y-4"
+            className="border-t border-[var(--border-color)] bg-[var(--bg-primary)] px-4 py-2.5 font-mono text-[11px] max-h-32 overflow-y-auto"
           >
-            {/* Control Action Buttons */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {/* Button 1: Normal Traffic */}
+            <div className="flex items-center justify-between text-[10px] text-[var(--text-muted)] uppercase mb-1 font-sans font-semibold">
+              <span>Simulator Console</span>
               <button
-                disabled={loadingAction !== null}
-                onClick={() =>
-                  handleAction(
-                    'normal',
-                    '/api/demo/simulate-normal',
-                    '✅ Injected 4 legitimate consumer transactions. Baseline metrics recorded.'
-                  )
-                }
-                className="group relative flex flex-col items-start gap-1 p-3.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/15 hover:border-emerald-500/40 transition-all text-left disabled:opacity-50"
+                onClick={() => setLogs([])}
+                className="hover:text-[var(--text-primary)] text-[10px]"
               >
-                <div className="flex items-center gap-2 text-emerald-400 font-medium text-xs">
-                  <ShieldCheck className="h-4 w-4" />
-                  <span>1. Generate Normal Traffic</span>
-                </div>
-                <p className="text-[11px] text-slate-400">
-                  Adds legitimate $15–$80 consumer payments; keeps model latency normal.
-                </p>
-                {loadingAction === 'normal' && (
-                  <span className="absolute top-2 right-2 flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                  </span>
-                )}
-              </button>
-
-              {/* Button 2: Fraud Attack Surge */}
-              <button
-                disabled={loadingAction !== null}
-                onClick={() =>
-                  handleAction(
-                    'fraud',
-                    '/api/demo/simulate-fraud',
-                    '🚨 FRAUD ATTACK INJECTED! Risk scores > 0.90 recorded. Slack alert firing in Alertmanager.'
-                  )
-                }
-                className="group relative flex flex-col items-start gap-1 p-3.5 rounded-xl border border-rose-500/20 bg-rose-500/5 hover:bg-rose-500/15 hover:border-rose-500/40 transition-all text-left disabled:opacity-50"
-              >
-                <div className="flex items-center gap-2 text-rose-400 font-medium text-xs">
-                  <AlertOctagon className="h-4 w-4" />
-                  <span>2. Trigger Fraud Attack</span>
-                </div>
-                <p className="text-[11px] text-slate-400">
-                  Injects $8,500+ midnight transactions with geo-mismatch. <b className="text-rose-300">Fires Slack Alert!</b>
-                </p>
-                {loadingAction === 'fraud' && (
-                  <span className="absolute top-2 right-2 flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
-                  </span>
-                )}
-              </button>
-
-              {/* Button 3: Smurfing Ring */}
-              <button
-                disabled={loadingAction !== null}
-                onClick={() =>
-                  handleAction(
-                    'smurfing',
-                    '/api/demo/simulate-smurfing',
-                    '🕸️ SMURFING RING INJECTED! Layered structuring detected by NetworkX. Slack alert fired.'
-                  )
-                }
-                className="group relative flex flex-col items-start gap-1 p-3.5 rounded-xl border border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/15 hover:border-amber-500/40 transition-all text-left disabled:opacity-50"
-              >
-                <div className="flex items-center gap-2 text-amber-400 font-medium text-xs">
-                  <Network className="h-4 w-4" />
-                  <span>3. Inject Smurfing Ring</span>
-                </div>
-                <p className="text-[11px] text-slate-400">
-                  Simulates cyclic money laundering structuring below $5k threshold.
-                </p>
-                {loadingAction === 'smurfing' && (
-                  <span className="absolute top-2 right-2 flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
-                  </span>
-                )}
-              </button>
-
-              {/* Button 4: Auto-Seed Baseline */}
-              <button
-                disabled={loadingAction !== null}
-                onClick={() =>
-                  handleAction(
-                    'seed',
-                    '/api/demo/seed-all',
-                    '🎉 Database initialized with admin account and historical records!'
-                  )
-                }
-                className="group relative flex flex-col items-start gap-1 p-3.5 rounded-xl border border-indigo-500/20 bg-indigo-500/5 hover:bg-indigo-500/15 hover:border-indigo-500/40 transition-all text-left disabled:opacity-50"
-              >
-                <div className="flex items-center gap-2 text-indigo-400 font-medium text-xs">
-                  <Database className="h-4 w-4" />
-                  <span>4. Seed Sample History</span>
-                </div>
-                <p className="text-[11px] text-slate-400">
-                  Initializes admin (<code className="text-indigo-300">admin@finguard.ai</code>) and transaction history.
-                </p>
-                {loadingAction === 'seed' && (
-                  <span className="absolute top-2 right-2 flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
-                  </span>
-                )}
+                Clear Log
               </button>
             </div>
-
-            {/* Live Activity Log */}
-            <div className="rounded-xl border border-slate-800 bg-slate-950/80 p-3 font-mono text-xs max-h-32 overflow-y-auto space-y-1">
-              <div className="text-[11px] text-slate-500 uppercase tracking-wider mb-1 font-sans font-semibold flex items-center justify-between">
-                <span>Live Simulator Activity Log</span>
-                <span className="text-[10px] text-slate-600">Auto-refreshes dashboard</span>
+            {logs.map((log, idx) => (
+              <div key={idx} className="flex items-start gap-2 py-0.5 leading-relaxed">
+                <span className="text-[var(--text-muted)]">[{log.time}]</span>
+                <span
+                  className={
+                    log.type === 'error'
+                      ? 'text-rose-500'
+                      : log.type === 'success'
+                      ? 'text-emerald-500'
+                      : 'text-[var(--text-secondary)]'
+                  }
+                >
+                  {log.msg}
+                </span>
               </div>
-              {logs.map((log, idx) => (
-                <div key={idx} className="flex items-start gap-2 leading-relaxed">
-                  <span className="text-slate-600">[{log.time}]</span>
-                  <span
-                    className={
-                      log.type === 'error'
-                        ? 'text-rose-400'
-                        : log.type === 'success'
-                        ? 'text-emerald-400'
-                        : 'text-indigo-300'
-                    }
-                  >
-                    {log.msg}
-                  </span>
-                </div>
-              ))}
-            </div>
+            ))}
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </div>
   );
 }
